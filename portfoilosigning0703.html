@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>营业部股票组合投顾签约数据看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei','PingFang SC',sans-serif;background:#f5f6f8;color:#1e293b;min-height:100vh}
+.header{background:#fff;padding:24px 36px;border-bottom:1px solid #e8ecf1;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.header h1{font-size:22px;font-weight:700;color:#0f172a}
+.header .meta{font-size:13px;color:#64748b;background:#f1f5f9;padding:6px 14px;border-radius:6px}
+.section-title{padding:28px 36px 14px;font-size:17px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';display:inline-block;width:4px;height:18px;background:#3b82f6;border-radius:2px}
+.cat-tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:6px}
+.cat-tag.cond{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.cat-tag.full{background:#fef3c7;color:#d97706;border:1px solid #fde68a}
+
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;padding:14px 36px}
+.kpi-card{background:#fff;border:1px solid #e8ecf1;border-radius:10px;padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:box-shadow .2s}
+.kpi-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.kpi-card .kpi-label{font-size:12px;color:#64748b;margin-bottom:6px}
+.kpi-card .kpi-value{font-size:26px;font-weight:700;color:#0f172a}
+.kpi-card .kpi-sub{font-size:11px;margin-top:4px;color:#64748b}
+.kpi-card .kpi-sub.up{color:#16a34a}
+.kpi-card .kpi-sub.down{color:#dc2626}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 36px 14px}
+.grid-1{padding:0 36px 14px}
+
+.panel{background:#fff;border:1px solid #e8ecf1;border-radius:10px;padding:18px 20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.panel h4{font-size:14px;font-weight:600;color:#334155;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9}
+.chart-box{width:100%;height:360px}
+.chart-box.tall{height:420px}
+
+.latest-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.latest-table th,.latest-table td{padding:10px 12px;text-align:center;border-bottom:1px solid #f1f5f9}
+.latest-table th{background:#f8fafc;color:#475569;font-weight:600;font-size:12px;white-space:nowrap}
+.latest-table td{color:#334155}
+.latest-table .product-name{text-align:left;font-weight:600;color:#0f172a}
+.latest-table .num-high{color:#16a34a;font-weight:600}
+.latest-table .num-warn{color:#dc2626;font-weight:600}
+.latest-table .num-neutral{color:#64748b}
+.latest-table tr:hover td{background:#f8fafc}
+.latest-table .cat-row td{background:#f8fafc;font-weight:700;font-size:12px;color:#475569;padding:8px 12px;border-bottom:2px solid #e2e8f0}
+.latest-table .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+.analysis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.analysis-card{background:#fff;border:1px solid #e8ecf1;border-radius:10px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.analysis-card .ac-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.analysis-card .ac-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.analysis-card .ac-icon.green{background:#dcfce7;color:#16a34a}
+.analysis-card .ac-icon.amber{background:#fef3c7;color:#d97706}
+.analysis-card .ac-icon.blue{background:#dbeafe;color:#2563eb}
+.analysis-card .ac-title{font-weight:700;font-size:14px;color:#0f172a}
+.analysis-card .ac-body{font-size:13px;color:#475569;line-height:1.7}
+.analysis-card .ac-body ul{padding-left:16px;margin-top:4px}
+.analysis-card .ac-body li{margin-bottom:4px}
+.analysis-card .ac-body strong{color:#0f172a}
+
+.footer{padding:20px 36px;text-align:center;color:#94a3b8;font-size:11px;border-top:1px solid #e8ecf1;margin-top:10px;background:#fff}
+.hint-bar{padding:10px 36px;font-size:12px;color:#b45309;display:flex;align-items:center;gap:6px;background:#fffbeb;border-bottom:1px solid #fde68a}
+
+.follow-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.follow-table th,.follow-table td{padding:10px 12px;text-align:center;border-bottom:1px solid #f1f5f9}
+.follow-table th{background:#f0fdf4;color:#166534;font-weight:600;font-size:12px;white-space:nowrap}
+.follow-table td{color:#334155}
+.follow-table .rate-high{color:#16a34a;font-weight:700}
+.follow-table .rate-low{color:#dc2626;font-weight:700}
+.follow-table .rate-mid{color:#d97706;font-weight:700}
+.follow-table .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>📊 营业部股票组合投顾签约数据看板</h1>
+  <div class="meta">数据周期：2026/5/8 — 2026/7/3（共8个统计周）</div>
+</div>
+
+<div class="hint-bar">
+  ⚠️ 同一客户可能签约多个股票组合，本看板所有数据均按<strong>产品组合维度</strong>独立展示，请勿跨产品简单加总。本周起组合已按业务模式分为<strong>条件升佣组合</strong>与<strong>全账户升佣组合</strong>两类。
+</div>
+
+<!-- KPI -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">🏆 条件升佣·最大单品</div>
+    <div class="kpi-value" style="font-size:22px">富阳同行</div>
+    <div class="kpi-sub">97人 / 22,310万（跟投率38.7%）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">🆕 新上架组合</div>
+    <div class="kpi-value" style="font-size:22px">满山红</div>
+    <div class="kpi-sub up">首周35人 / 3,026万（本周签约+19）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">📈 条件升佣·人数第一</div>
+    <div class="kpi-value" style="font-size:22px">燎原先锋1号</div>
+    <div class="kpi-sub">94人 / 跟投率34.7% / 解约7人⚠️</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">⚠️ 燎原先锋1号本周解约</div>
+    <div class="kpi-value" style="color:#dc2626">-7人</div>
+    <div class="kpi-sub down">解约资产1,141万（首现大规模流失）</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">📉 钱说有乾坤连续6周净流失</div>
+    <div class="kpi-value" style="color:#dc2626">71→53人</div>
+    <div class="kpi-sub down">累计-18人，本周再-2人</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">📦 产品矩阵</div>
+    <div class="kpi-value" style="font-size:20px">4+2</div>
+    <div class="kpi-sub">条件升佣4个 + 全账户升佣2个</div>
+  </div>
+</div>
+
+<!-- ===== 模块一：最新一周 ===== -->
+<div class="section-title">📅 模块一：最近一周各组合签约情况（截至2026/7/3）</div>
+
+<!-- 条件升佣组合明细 -->
+<div class="grid-1">
+  <div class="panel">
+    <h4>条件升佣组合 — 关键指标明细</h4>
+    <table class="latest-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">产品组合</th>
+          <th>总签约<br>人数</th>
+          <th>总签约资产<br>（万元）</th>
+          <th>有效签约<br>人数</th>
+          <th>有效签约<br>资产（万元）</th>
+          <th>有效<br>签约率</th>
+          <th>本周签约<br>人数</th>
+          <th>本周签约<br>资产（万元）</th>
+          <th>本周解约<br>人数</th>
+          <th>本周解约<br>资产（万元）</th>
+          <th>周净增<br>人数</th>
+        </tr>
+      </thead>
+      <tbody id="table-cond"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 全账户升佣组合明细 -->
+<div class="grid-1">
+  <div class="panel">
+    <h4>全账户升佣组合 — 关键指标明细</h4>
+    <table class="latest-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">产品组合</th>
+          <th>总签约<br>人数</th>
+          <th>总签约资产<br>（万元）</th>
+          <th>有效签约<br>人数</th>
+          <th>有效签约<br>资产（万元）</th>
+          <th>有效<br>签约率</th>
+          <th>本周签约<br>人数</th>
+          <th>本周签约<br>资产（万元）</th>
+          <th>本周解约<br>人数</th>
+          <th>本周解约<br>资产（万元）</th>
+          <th>周净增<br>人数</th>
+        </tr>
+      </thead>
+      <tbody id="table-full"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 跟投率模块（仅条件升佣组合） -->
+<div class="section-title">🎯 条件升佣组合专项：客户跟投行为分析（本周新增指标）</div>
+<div class="grid-2">
+  <div class="panel">
+    <h4>条件升佣组合 — 客户跟投明细（截至2026/7/3）</h4>
+    <table class="follow-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">产品组合</th>
+          <th>总签约<br>人数</th>
+          <th>跟随买入<br>客户数</th>
+          <th>跟投率</th>
+          <th>自行卖出<br>客户数</th>
+          <th>跟随卖出<br>客户数</th>
+          <th>卖出客户<br>合计</th>
+        </tr>
+      </thead>
+      <tbody id="table-follow"></tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <h4>各组合跟投率对比</h4>
+    <div class="chart-box" id="chart-follow-rate"></div>
+  </div>
+</div>
+
+<!-- 最新一周签约/解约 -->
+<div class="grid-2">
+  <div class="panel">
+    <h4>本周各组合签约 vs 解约人数</h4>
+    <div class="chart-box" id="chart-latest-sign-cancel"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合高净值客户签约情况</h4>
+    <div class="chart-box" id="chart-latest-hnw"></div>
+  </div>
+</div>
+
+<!-- ===== 模块二：8周趋势——签约人数 ===== -->
+<div class="section-title">📈 模块二：整个时期（8周）各组合签约人数变化（按组合类型分开展示）</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>条件升佣组合 — 总签约人数趋势（8周）</h4>
+    <div class="chart-box tall" id="chart-trend-count-cond"></div>
+  </div>
+</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>全账户升佣组合 — 总签约人数趋势（8周）</h4>
+    <div class="chart-box tall" id="chart-trend-count-full"></div>
+  </div>
+</div>
+
+<!-- 签约/解约堆叠 -->
+<div class="grid-2">
+  <div class="panel">
+    <h4>各组合每周签约人数变化（堆叠柱状图）</h4>
+    <div class="chart-box" id="chart-weekly-sign"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合每周解约人数变化（堆叠柱状图）</h4>
+    <div class="chart-box" id="chart-weekly-cancel"></div>
+  </div>
+</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>各组合每周净签约变化热力图</h4>
+    <div class="chart-box" id="chart-heatmap" style="height:340px"></div>
+  </div>
+</div>
+
+<!-- ===== 签约资产 ===== -->
+<div class="section-title">💰 模块二续：整个时期（8周）各组合签约资产变化</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>条件升佣组合 — 总签约资产趋势（万元，8周）</h4>
+    <div class="chart-box tall" id="chart-trend-asset-cond"></div>
+  </div>
+</div>
+<div class="grid-1">
+  <div class="panel">
+    <h4>全账户升佣组合 — 总签约资产趋势（万元，8周）</h4>
+    <div class="chart-box tall" id="chart-trend-asset-full"></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="panel">
+    <h4>各组合有效签约人数趋势</h4>
+    <div class="chart-box" id="chart-eff-trend"></div>
+  </div>
+  <div class="panel">
+    <h4>各组合有效签约率变化（%）</h4>
+    <div class="chart-box" id="chart-eff-rate-trend"></div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="panel">
+    <h4>高净值客户签约人数趋势</h4>
+    <div class="chart-box" id="chart-hnw-trend"></div>
+  </div>
+  <div class="panel">
+    <h4>高净值客户签约资产趋势（万元）</h4>
+    <div class="chart-box" id="chart-hnw-asset-trend"></div>
+  </div>
+</div>
+
+<!-- ===== 模块三：业务分析 ===== -->
+<div class="section-title">🔍 模块三：营业部股票组合投顾业务分析结论</div>
+<div style="padding:0 36px 20px">
+  <div class="analysis-grid">
+    <div class="analysis-card">
+      <div class="ac-header"><div class="ac-icon green">✅</div><div class="ac-title">核心亮点</div></div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>满山红首周表现亮眼</strong>：新上架即达35人/3,026万元，首周签约19人/1,900万，但跟投率仅10.5%，客户主动跟随意愿待培育。</li>
+          <li><strong>富阳同行仍是最稳健的核心支柱</strong>：97人/22,310万元，跟投率<strong>38.7%</strong>为全产品最高，客户粘性和信任度领先。</li>
+          <li><strong>燎原先锋1号规模跃居第一</strong>：94人超越富阳同行，但有效签约率15.3%、跟投率34.7%，量大但转化效率中等。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="analysis-card">
+      <div class="ac-header"><div class="ac-icon amber">⚠️</div><div class="ac-title">需要重点关注</div></div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>燎原先锋1号首现大规模解约</strong>：本周解约<strong>7人/1,141万元</strong>（自行卖出15人+跟随卖出19人），此前连续4周零解约，需紧急排查是否与市场波动或投顾策略调整有关。</li>
+          <li><strong>富阳同行本周解约3人/416万</strong>：虽跟投率高，但30人自行卖出为全产品最多，可能反映客户对持仓有独立判断。</li>
+          <li><strong>钱说有乾坤流失未止</strong>：连续6周净解约（71→53人，-25.4%），本周再减2人，急需干预。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="analysis-card">
+      <div class="ac-header"><div class="ac-icon blue">💡</div><div class="ac-title">改进建议</div></div>
+      <div class="ac-body">
+        <ul>
+          <li><strong>提升满山红跟投率</strong>：当前仅10.5%，远低于其他条件升佣组合（35-39%），建议加强客户沟通和调仓逻辑说明。</li>
+          <li><strong>富阳同行客户维护优先</strong>：30人自行卖出是风险信号，建议逐一回访了解卖出原因，防止从"自行卖出"演变为"解约"。</li>
+          <li><strong>燎原先锋1号需稳住存量</strong>：在快速扩张（5→94人）后出现7人解约，应暂停激进获客，优先巩固存量客户关系。</li>
+          <li><strong>考虑钱说有乾坤产品调整</strong>：若下周期仍无改善，建议评估该组合是否需策略调整或合并。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 数据说明 -->
+<div style="padding:0 36px 14px">
+  <div class="panel" style="background:#fefce8;border-color:#fde68a">
+    <h4 style="border-bottom-color:#fde68a">📝 数据说明</h4>
+    <div style="font-size:13px;color:#713f12;line-height:1.8">
+      <strong>组合分类：</strong>本周起将组合分为<strong>条件升佣组合</strong>（燎原先锋1号、江北嘴贰号、满山红、富阳同行）和<strong>全账户升佣组合</strong>（钱说有乾坤、中心化组合），历史周数据按此分类回溯。<br>
+      <strong>新增指标：</strong>"跟投率"=跟随买入客户数/总签约客户数（含已解约客户），仅本周（截至7/3）有条件升佣组合的跟投数据，过往周无此指标。<br>
+      <strong>重要提示：</strong>同一客户可能同时签约多个组合，本看板所有数据均按<strong>产品组合维度</strong>独立展示，不可跨产品简单加总。<br>
+      <strong>数据局限：</strong>燎原先锋1号与江北嘴贰号为第4周（5/29起）新增统计；满山红为第8周（6/27起）新上架组合。
+    </div>
+  </div>
+</div>
+
+<div class="footer">数据来源：周度签约解约数据统计.xlsx &nbsp;|&nbsp; 统计范围：2026/5/8 — 2026/7/3（8个统计周）&nbsp;|&nbsp; 制表单位：营业部投顾业务组</div>
+
+<script>
+// ==================== 原始数据（8周） ====================
+const periods = [
+  '20260508-20260514','20260515-20260521','20260522-20260528',
+  '20260529-20260604','20260605-20260611','20260612-20260618',
+  '20260619-20260626','20260627-20260703'
+];
+const periodLabels = ['截至5/14','截至5/21','截至5/28','截至6/4','截至6/11','截至6/18','截至6/26','截至7/3'];
+const periodLabelsFull = [
+  'W1\n截至5/14','W2\n截至5/21','W3\n截至5/28','W4\n截至6/4',
+  'W5\n截至6/11','W6\n截至6/18','W7\n截至6/26','W8\n截至7/3'
+];
+
+// 条件升佣组合 & 全账户升佣组合
+const condProducts = ['燎原先锋1号','江北嘴贰号','满山红','富阳同行'];
+const fullProducts = ['钱说有乾坤','中心化组合'];
+const allProducts = [...condProducts, ...fullProducts];
+const condColors = ['#3b82f6','#10b981','#f97316','#f59e0b'];
+const fullColors = ['#8b5cf6','#ef4444'];
+const allColors = [...condColors, ...fullColors];
+
+const rawData = {
+  '20260627-20260703': [
+    {name:'燎原先锋1号',cat:'cond',totalPpl:94,totalAsset:8170.24,effPpl:13,effAsset:2246.88,wkSign:15,wkSignAsset:2038.30,wkCancel:7,wkCancelAsset:1140.69,hnwPpl:10,hnwAsset:3848.97,hnwEffPpl:3,hnwEffAsset:1382.62, followBuy:35,selfSell:15,followSell:19,followRate:34.7},
+    {name:'江北嘴贰号',cat:'cond',totalPpl:45,totalAsset:3742.42,effPpl:5,effAsset:278.87,wkSign:1,wkSignAsset:9.36,wkCancel:1,wkCancelAsset:47.38,hnwPpl:6,hnwAsset:2053.99,hnwEffPpl:0,hnwEffAsset:0, followBuy:14,selfSell:5,followSell:8,followRate:31.1},
+    {name:'满山红',cat:'cond',totalPpl:35,totalAsset:3025.69,effPpl:1,effAsset:727.86,wkSign:19,wkSignAsset:1900.37,wkCancel:0,wkCancelAsset:0,hnwPpl:5,hnwAsset:1541.17,hnwEffPpl:1,hnwEffAsset:727.86, followBuy:2,selfSell:1,followSell:1,followRate:10.5},
+    {name:'富阳同行',cat:'cond',totalPpl:97,totalAsset:22310.09,effPpl:18,effAsset:3806.69,wkSign:1,wkSignAsset:226.12,wkCancel:3,wkCancelAsset:416.27,hnwPpl:22,hnwAsset:18472.34,hnwEffPpl:6,hnwEffAsset:3103.44, followBuy:43,selfSell:30,followSell:14,followRate:38.7},
+    {name:'钱说有乾坤',cat:'full',totalPpl:53,totalAsset:4134,effPpl:23,effAsset:2212.43,wkSign:0,wkSignAsset:0,wkCancel:2,wkCancelAsset:3.91,hnwPpl:6,hnwAsset:2536.55,hnwEffPpl:4,hnwEffAsset:1054.07},
+    {name:'中心化组合',cat:'full',totalPpl:12,totalAsset:1018.03,effPpl:3,effAsset:261.32,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:2,hnwAsset:708.23,hnwEffPpl:1,hnwEffAsset:201.65},
+  ],
+  '20260619-20260626': [
+    {name:'燎原先锋1号',cat:'cond',totalPpl:85,totalAsset:6896.72,effPpl:13,effAsset:1374.84,wkSign:46,wkSignAsset:3928.28,wkCancel:0,wkCancelAsset:0,hnwPpl:9,hnwAsset:3240.08,hnwEffPpl:2,hnwEffAsset:633.34},
+    {name:'江北嘴贰号',cat:'cond',totalPpl:42,totalAsset:2739.34,effPpl:3,effAsset:129.61,wkSign:18,wkSignAsset:1190.91,wkCancel:1,wkCancelAsset:102.29,hnwPpl:4,hnwAsset:1108.5,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'富阳同行',cat:'cond',totalPpl:98,totalAsset:21924.69,effPpl:18,effAsset:3662.01,wkSign:2,wkSignAsset:346.81,wkCancel:0,wkCancelAsset:0,hnwPpl:20,hnwAsset:17774.68,hnwEffPpl:5,hnwEffAsset:2724.16},
+    {name:'钱说有乾坤',cat:'full',totalPpl:55,totalAsset:4118.49,effPpl:22,effAsset:2222.54,wkSign:0,wkSignAsset:0,wkCancel:5,wkCancelAsset:14.71,hnwPpl:6,hnwAsset:2539.81,hnwEffPpl:4,hnwEffAsset:1091.21},
+    {name:'中心化组合',cat:'full',totalPpl:11,totalAsset:604.32,effPpl:3,effAsset:247.38,wkSign:1,wkSignAsset:38.2,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:199.65,hnwEffPpl:1,hnwEffAsset:199.65},
+  ],
+  '20260612-20260618': [
+    {name:'燎原先锋1号',cat:'cond',totalPpl:36,totalAsset:2822.94,effPpl:1,effAsset:65,wkSign:20,wkSignAsset:1351.34,wkCancel:0,wkCancelAsset:0,hnwPpl:4,hnwAsset:1246.93,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'江北嘴贰号',cat:'cond',totalPpl:22,totalAsset:1541.83,effPpl:0,effAsset:0,wkSign:12,wkSignAsset:603.49,wkCancel:0,wkCancelAsset:0,hnwPpl:2,hnwAsset:636.33,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'富阳同行',cat:'cond',totalPpl:96,totalAsset:21679.41,effPpl:17,effAsset:3582.59,wkSign:2,wkSignAsset:288.18,wkCancel:1,wkCancelAsset:82.27,hnwPpl:19,hnwAsset:17544.36,hnwEffPpl:5,hnwEffAsset:2695.71},
+    {name:'钱说有乾坤',cat:'full',totalPpl:60,totalAsset:4127.84,effPpl:22,effAsset:2223.18,wkSign:0,wkSignAsset:0,wkCancel:3,wkCancelAsset:138.53,hnwPpl:5,hnwAsset:2337.39,hnwEffPpl:3,hnwEffAsset:894.15},
+    {name:'中心化组合',cat:'full',totalPpl:9,totalAsset:638.87,effPpl:3,effAsset:241.98,wkSign:1,wkSignAsset:358.07,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:198.73,hnwEffPpl:1,hnwEffAsset:198.73},
+  ],
+  '20260605-20260611': [
+    {name:'燎原先锋1号',cat:'cond',totalPpl:16,totalAsset:1483.39,effPpl:1,effAsset:62.42,wkSign:12,wkSignAsset:1175.37,wkCancel:1,wkCancelAsset:293.01,hnwPpl:3,hnwAsset:828.99,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'江北嘴贰号',cat:'cond',totalPpl:10,totalAsset:935.84,effPpl:0,effAsset:0,wkSign:7,wkSignAsset:690.23,wkCancel:1,wkCancelAsset:293.01,hnwPpl:2,hnwAsset:640.77,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'富阳同行',cat:'cond',totalPpl:95,totalAsset:22326.11,effPpl:17,effAsset:3613.9,wkSign:3,wkSignAsset:127.03,wkCancel:1,wkCancelAsset:35.41,hnwPpl:19,hnwAsset:18362.62,hnwEffPpl:5,hnwEffAsset:2730.9},
+    {name:'钱说有乾坤',cat:'full',totalPpl:63,totalAsset:4276.46,effPpl:22,effAsset:2228.68,wkSign:0,wkSignAsset:0,wkCancel:3,wkCancelAsset:278.94,hnwPpl:6,hnwAsset:2540.47,hnwEffPpl:4,hnwEffAsset:1093.87},
+    {name:'中心化组合',cat:'full',totalPpl:8,totalAsset:279.72,effPpl:3,effAsset:240.47,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:200.62,hnwEffPpl:1,hnwEffAsset:200.62},
+  ],
+  '20260529-20260604': [
+    {name:'燎原先锋1号',cat:'cond',totalPpl:5,totalAsset:600.13,effPpl:0,effAsset:0,wkSign:5,wkSignAsset:600.13,wkCancel:0,wkCancelAsset:0,hnwPpl:2,hnwAsset:498.4,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'江北嘴贰号',cat:'cond',totalPpl:4,totalAsset:532.5,effPpl:0,effAsset:0,wkSign:4,wkSignAsset:532.5,wkCancel:0,wkCancelAsset:0,hnwPpl:2,hnwAsset:498.4,hnwEffPpl:0,hnwEffAsset:0},
+    {name:'富阳同行',cat:'cond',totalPpl:93,totalAsset:22701.61,effPpl:17,effAsset:3659.23,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:20,hnwAsset:18778.79,hnwEffPpl:5,hnwEffAsset:2774.39},
+    {name:'钱说有乾坤',cat:'full',totalPpl:66,totalAsset:4608.89,effPpl:20,effAsset:2060.07,wkSign:0,wkSignAsset:0,wkCancel:4,wkCancelAsset:217.17,hnwPpl:7,hnwAsset:2838.43,hnwEffPpl:3,hnwEffAsset:909.95},
+    {name:'中心化组合',cat:'full',totalPpl:8,totalAsset:280.77,effPpl:3,effAsset:240.58,wkSign:1,wkSignAsset:1.28,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:202.76,hnwEffPpl:1,hnwEffAsset:202.76},
+  ],
+  '20260522-20260528': [
+    {name:'富阳同行',cat:'cond',totalPpl:93,totalAsset:22261.82,effPpl:17,effAsset:3632.64,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:17,hnwAsset:17499.49,hnwEffPpl:5,hnwEffAsset:2752.92},
+    {name:'钱说有乾坤',cat:'full',totalPpl:70,totalAsset:4781.11,effPpl:19,effAsset:2149.26,wkSign:0,wkSignAsset:0,wkCancel:1,wkCancelAsset:3.33,hnwPpl:7,hnwAsset:2682.22,hnwEffPpl:3,hnwEffAsset:948.17},
+    {name:'中心化组合',cat:'full',totalPpl:7,totalAsset:284.79,effPpl:3,effAsset:241.25,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:210.76,hnwEffPpl:1,hnwEffAsset:210.76},
+  ],
+  '20260515-20260521': [
+    {name:'富阳同行',cat:'cond',totalPpl:93,totalAsset:22167.01,effPpl:16,effAsset:3410.44,wkSign:1,wkSignAsset:36.67,wkCancel:0,wkCancelAsset:0,hnwPpl:17,hnwAsset:17556.5,hnwEffPpl:4,hnwEffAsset:2536.89},
+    {name:'钱说有乾坤',cat:'full',totalPpl:71,totalAsset:4728.14,effPpl:19,effAsset:2178.25,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:6,hnwAsset:2435.42,hnwEffPpl:3,hnwEffAsset:961.78},
+    {name:'中心化组合',cat:'full',totalPpl:7,totalAsset:287.17,effPpl:2,effAsset:215.99,wkSign:0,wkSignAsset:0,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:211.4,hnwEffPpl:1,hnwEffAsset:211.4},
+  ],
+  '20260508-20260514': [
+    {name:'富阳同行',cat:'cond',totalPpl:92,totalAsset:21850.52,effPpl:16,effAsset:3374.54,wkSign:2,wkSignAsset:6203.72,wkCancel:2,wkCancelAsset:88.74,hnwPpl:17,hnwAsset:17525.15,hnwEffPpl:4,hnwEffAsset:0},
+    {name:'钱说有乾坤',cat:'full',totalPpl:71,totalAsset:4695.75,effPpl:19,effAsset:2188.61,wkSign:0,wkSignAsset:0,wkCancel:1,wkCancelAsset:39.29,hnwPpl:6,hnwAsset:2413.66,hnwEffPpl:3,hnwEffAsset:0},
+    {name:'中心化组合',cat:'full',totalPpl:7,totalAsset:282.47,effPpl:2,effAsset:214.79,wkSign:1,wkSignAsset:39.45,wkCancel:0,wkCancelAsset:0,hnwPpl:1,hnwAsset:211.21,hnwEffPpl:1,hnwEffAsset:0},
+  ],
+};
+
+// ==================== 辅助函数 ====================
+function getData(product, field) {
+  return periods.map(p => {
+    const items = rawData[p] || [];
+    const item = items.find(i => i.name === product);
+    return item != null ? (item[field] != null ? item[field] : 0) : null;
+  });
+}
+function fmtW(v) { return v != null ? v.toFixed(0) : '-'; }
+function fmtP(a,b) { return b>0 ? (a/b*100).toFixed(1)+'%' : '0%'; }
+function initC(id) { return echarts.init(document.getElementById(id)); }
+
+// ==================== 模块一：表格 ====================
+(function(){
+  const latest = rawData['20260627-20260703'];
+  const cond = latest.filter(i => i.cat === 'cond');
+  const full = latest.filter(i => i.cat === 'full');
+
+  function renderTable(tbodyId, items, catColors) {
+    const tbody = document.getElementById(tbodyId);
+    let h = '';
+    items.forEach((item, i) => {
+      const net = item.wkSign - item.wkCancel;
+      h += '<tr>';
+      h += `<td class="product-name"><span class="dot" style="background:${catColors[i]}"></span>${item.name}</td>`;
+      h += `<td><strong>${item.totalPpl}</strong></td><td>${fmtW(item.totalAsset)}</td>`;
+      h += `<td class="${item.effPpl>0?'num-high':'num-neutral'}">${item.effPpl}</td><td>${fmtW(item.effAsset)}</td>`;
+      h += `<td class="${item.effPpl/item.totalPpl>=0.3?'num-high':item.effPpl===0?'num-warn':''}">${fmtP(item.effPpl,item.totalPpl)}</td>`;
+      h += `<td class="${item.wkSign>0?'num-high':'num-neutral'}">${item.wkSign>0?'+'+item.wkSign:'0'}</td><td>${item.wkSignAsset>0?fmtW(item.wkSignAsset):'0'}</td>`;
+      h += `<td class="${item.wkCancel>0?'num-warn':'num-neutral'}">${item.wkCancel>0?'-'+item.wkCancel:'0'}</td><td>${item.wkCancelAsset>0?'-'+fmtW(item.wkCancelAsset):'0'}</td>`;
+      h += `<td class="${net>0?'num-high':net<0?'num-warn':''}">${net>0?'+'+net:net}</td>`;
+      h += '</tr>';
+    });
+    tbody.innerHTML = h;
+  }
+  renderTable('table-cond', cond, condColors);
+  renderTable('table-full', full, fullColors);
+
+  // 跟投表
+  const ftbody = document.getElementById('table-follow');
+  let fh = '';
+  cond.forEach((item, i) => {
+    const rate = item.followRate || 0;
+    fh += '<tr>';
+    fh += `<td style="text-align:left"><span class="dot" style="background:${condColors[i]}"></span><strong>${item.name}</strong></td>`;
+    fh += `<td><strong>${item.totalPpl}</strong></td>`;
+    fh += `<td>${item.followBuy!=null?item.followBuy:'-'}</td>`;
+    fh += `<td class="${rate>=35?'rate-high':rate>=20?'rate-mid':'rate-low'}">${item.followRate!=null?item.followRate+'%':'-'}</td>`;
+    fh += `<td>${item.selfSell!=null?item.selfSell:'-'}</td>`;
+    fh += `<td>${item.followSell!=null?item.followSell:'-'}</td>`;
+    fh += `<td>${(item.selfSell!=null&&item.followSell!=null)?(item.selfSell+item.followSell):'-'}</td>`;
+    fh += '</tr>';
+  });
+  ftbody.innerHTML = fh;
+
+  // 跟投率柱状图
+  const fc = initC('chart-follow-rate');
+  fc.setOption({
+    tooltip:{trigger:'axis',valueFormatter:v=>v.toFixed(1)+'%'},
+    grid:{left:90,right:40,top:10,bottom:30},
+    xAxis:{type:'value',name:'%',nameTextStyle:{color:'#64748b'},axisLabel:{color:'#64748b'},max:50,splitLine:{lineStyle:{color:'#f1f5f9'}}},
+    yAxis:{type:'category',data:cond.map(i=>i.name),axisLabel:{color:'#334155',fontWeight:600,fontSize:12}},
+    series:[{
+      type:'bar',data:cond.map((item,i)=>({
+        value:item.followRate||0,
+        itemStyle:{color:condColors[i],borderRadius:[0,4,4,0]}
+      })),barWidth:18,
+      label:{show:true,position:'right',fontSize:12,fontWeight:600,formatter:p=>p.value+'%'}
+    }]
+  });
+})();
+
+// 最新一周：签约 vs 解约
+(function(){
+  const latest = rawData['20260627-20260703'];
+  const names = latest.map(i=>i.name);
+  const chart = initC('chart-latest-sign-cancel');
+  chart.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:['本周签约','本周解约'],bottom:0,itemWidth:12,itemHeight:12,textStyle:{fontSize:12}},
+    grid:{left:90,right:30,top:10,bottom:35},
+    xAxis:{type:'value',name:'人数',nameTextStyle:{color:'#64748b'},axisLabel:{color:'#64748b'},splitLine:{lineStyle:{color:'#f1f5f9'}}},
+    yAxis:{type:'category',data:names,axisLabel:{color:'#334155',fontWeight:600,fontSize:12}},
+    series:[
+      {name:'本周签约',type:'bar',data:latest.map(i=>i.wkSign),barWidth:14,itemStyle:{color:'#3b82f6',borderRadius:[0,4,4,0]},label:{show:true,position:'right',color:'#3b82f6',fontSize:11}},
+      {name:'本周解约',type:'bar',data:latest.map(i=>i.wkCancel),barWidth:14,itemStyle:{color:'#ef4444',borderRadius:[0,4,4,0]},label:{show:true,position:'right',color:'#ef4444',fontSize:11}},
+    ]
+  });
+})();
+
+// 最新一周：高净值
+(function(){
+  const latest = rawData['20260627-20260703'];
+  const names = latest.map(i=>i.name);
+  const chart = initC('chart-latest-hnw');
+  chart.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:['高净值人数','高净值资产(万元)'],bottom:0,itemWidth:12,itemHeight:12,textStyle:{fontSize:12}},
+    grid:{left:90,right:50,top:10,bottom:35},
+    xAxis:{type:'value',name:'人数',nameTextStyle:{color:'#f59e0b'},axisLabel:{color:'#64748b'},splitLine:{show:false}},
+    yAxis:{type:'category',data:names,axisLabel:{color:'#334155',fontWeight:600,fontSize:12}},
+    series:[
+      {name:'高净值人数',type:'bar',data:latest.map(i=>i.hnwPpl),barWidth:14,itemStyle:{color:'#f59e0b',borderRadius:[0,4,4,0]},label:{show:true,position:'right',color:'#f59e0b',fontSize:11}},
+      {name:'高净值资产(万元)',type:'bar',data:latest.map(i=>i.hnwAsset),barWidth:14,itemStyle:{color:'#8b5cf6',borderRadius:[0,4,4,0]},label:{show:true,position:'right',color:'#8b5cf6',fontSize:11,formatter:p=>fmtW(p.value)}},
+    ]
+  });
+})();
+
+// ==================== 模块二：趋势 ====================
+function makeLineChart(domId, products, colors, field, yName, dashed) {
+  const chart = initC(domId);
+  chart.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:products,bottom:0,itemWidth:14,itemHeight:14,textStyle:{fontSize:11}},
+    grid:{left:55,right:20,top:15,bottom:40},
+    xAxis:{type:'category',data:periodLabelsFull,axisLabel:{color:'#64748b',fontSize:9},axisLine:{lineStyle:{color:'#e8ecf1'}}},
+    yAxis:{type:'value',name:yName,nameTextStyle:{color:'#64748b'},axisLabel:{color:'#64748b'},splitLine:{lineStyle:{color:'#f1f5f9',type:'dashed'}}},
+    series:products.map((p,i)=>({
+      name:p,type:'line',data:getData(p,field),color:colors[i],lineStyle:{width:2.5,type:dashed||'solid'},
+      symbol:'circle',symbolSize:7,connectNulls:true,
+      markPoint:{data:[{type:'max',name:'最高'}],symbolSize:36,label:{fontSize:9}},
+    }))
+  });
+}
+
+// 条件升佣人数趋势
+makeLineChart('chart-trend-count-cond', condProducts, condColors, 'totalPpl', '签约人数');
+// 全账户升佣人数趋势
+makeLineChart('chart-trend-count-full', fullProducts, fullColors, 'totalPpl', '签约人数');
+// 条件升佣资产趋势
+makeLineChart('chart-trend-asset-cond', condProducts, condColors, 'totalAsset', '万元');
+// 全账户升佣资产趋势
+makeLineChart('chart-trend-asset-full', fullProducts, fullColors, 'totalAsset', '万元');
+// 有效签约人数趋势
+makeLineChart('chart-eff-trend', allProducts, allColors, 'effPpl', '有效签约人数', 'dashed');
+// 高净值人数趋势
+makeLineChart('chart-hnw-trend', allProducts, allColors, 'hnwPpl', '人数', 'dotted');
+// 高净值资产
+makeLineChart('chart-hnw-asset-trend', allProducts, allColors, 'hnwAsset', '万元', 'dotted');
+
+// 有效签约率趋势
+(function(){
+  const chart = initC('chart-eff-rate-trend');
+  chart.setOption({
+    tooltip:{trigger:'axis',valueFormatter:v=>v.toFixed(1)+'%'},
+    legend:{data:allProducts,bottom:0,itemWidth:14,itemHeight:14,textStyle:{fontSize:11}},
+    grid:{left:55,right:20,top:10,bottom:40},
+    xAxis:{type:'category',data:periodLabels,axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:{type:'value',name:'有效签约率 %',nameTextStyle:{color:'#64748b'},axisLabel:{formatter:'{value}%',color:'#64748b'},splitLine:{lineStyle:{color:'#f1f5f9',type:'dashed'}},max:50},
+    series:allProducts.map((p,i)=>({
+      name:p,type:'line',color:allColors[i],lineStyle:{width:2.5},symbol:'roundRect',symbolSize:8,connectNulls:true,
+      data:periods.map(per=>{const items=rawData[per]||[];const it=items.find(x=>x.name===p);return it&&it.totalPpl>0?+(it.effPpl/it.totalPpl*100).toFixed(1):null;}),
+    }))
+  });
+})();
+
+// 每周签约（堆叠柱状）
+(function(){
+  const chart = initC('chart-weekly-sign');
+  chart.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:params=>{let s='<strong>'+params[0].axisValue+'</strong><br/>';let t=0;params.forEach(p=>{t+=p.value;s+=p.marker+p.seriesName+': '+p.value+'人<br/>'});return s+'<b>合计: '+t+'人</b>';}},
+    legend:{data:allProducts,bottom:0,itemWidth:14,itemHeight:14,textStyle:{fontSize:10}},
+    grid:{left:50,right:20,top:10,bottom:40},
+    xAxis:{type:'category',data:periodLabels,axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:{type:'value',name:'签约人数',nameTextStyle:{color:'#64748b'},splitLine:{lineStyle:{color:'#f1f5f9',type:'dashed'}}},
+    series:allProducts.map((p,i)=>({name:p,type:'bar',stack:'total',data:getData(p,'wkSign'),color:allColors[i],barWidth:40,emphasis:{focus:'series'},label:{show:true,fontSize:10,color:'#334155',position:'inside',formatter:p=>p.value>0?p.value:''}}))
+  });
+})();
+
+// 每周解约（堆叠柱状）
+(function(){
+  const chart = initC('chart-weekly-cancel');
+  chart.setOption({
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:params=>{let s='<strong>'+params[0].axisValue+'</strong><br/>';let t=0;params.forEach(p=>{t+=p.value;s+=p.marker+p.seriesName+': '+p.value+'人<br/>'});return s+'<b>合计: '+t+'人</b>';}},
+    legend:{data:allProducts,bottom:0,itemWidth:14,itemHeight:14,textStyle:{fontSize:10}},
+    grid:{left:50,right:20,top:10,bottom:40},
+    xAxis:{type:'category',data:periodLabels,axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:{type:'value',name:'解约人数',nameTextStyle:{color:'#64748b'},splitLine:{lineStyle:{color:'#f1f5f9',type:'dashed'}}},
+    series:allProducts.map((p,i)=>({name:p,type:'bar',stack:'total',data:getData(p,'wkCancel'),color:allColors[i],barWidth:40,emphasis:{focus:'series'},label:{show:true,fontSize:10,color:'#334155',position:'inside',formatter:p=>p.value>0?p.value:''}}))
+  });
+})();
+
+// 热力图
+(function(){
+  const chart = initC('chart-heatmap');
+  const hd = [];
+  const yLabels = allProducts.slice().reverse();
+  yLabels.forEach((p, yi) => {
+    periods.forEach((per, xi) => {
+      const items = rawData[per] || [];
+      const item = items.find(i => i.name === p);
+      if (item) hd.push([xi, yi, item.wkSign - item.wkCancel]);
+    });
+  });
+  chart.setOption({
+    tooltip:{formatter:p=>{const v=p.data[2];return '<strong>'+yLabels[p.data[1]]+'</strong><br/>周期：'+periodLabels[p.data[0]]+'<br/>净签约：<strong>'+(v>=0?'+':'')+v+'</strong>';}},
+    grid:{left:100,right:50,top:10,bottom:50},
+    xAxis:{type:'category',data:periodLabels,axisLabel:{color:'#64748b',fontSize:10}},
+    yAxis:{type:'category',data:yLabels,axisLabel:{color:'#334155',fontWeight:600,fontSize:12}},
+    visualMap:{min:-7,max:46,calculable:true,orient:'horizontal',left:'center',bottom:0,inRange:{color:['#fca5a5','#f1f5f9','#86efac']},text:['净增+','净减-'],textStyle:{color:'#64748b',fontSize:11}},
+    series:[{type:'heatmap',data:hd,label:{show:true,color:'#0f172a',fontSize:13,fontWeight:600},emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(0,0,0,.15)'}}}]
+  });
+})();
+
+// 响应式
+window.addEventListener('resize', () => {
+  document.querySelectorAll('.chart-box').forEach(el => {
+    const i = echarts.getInstanceByDom(el);
+    if (i) i.resize();
+  });
+});
+</script>
+</body>
+</html>
